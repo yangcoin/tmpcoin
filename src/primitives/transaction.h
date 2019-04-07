@@ -244,12 +244,8 @@ template<typename Stream, typename TxType>
 inline void UnserializeTransaction(TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
-    s >> tx.nVersion;
-#if TX_TIMESTAMP == 1
-    s >> tx.nTime;//For PoS
-#else
-    
-#endif    
+    s >> tx.nVersion; 
+
     unsigned char flags = 0;
     tx.vin.clear();
     tx.vout.clear();
@@ -284,10 +280,7 @@ template<typename Stream, typename TxType>
 inline void SerializeTransaction(const TxType& tx, Stream& s) {
     const bool fAllowWitness = !(s.GetVersion() & SERIALIZE_TRANSACTION_NO_WITNESS);
 
-    s << tx.nVersion;
-#if TX_TIMESTAMP == 1  
-    s << tx.nTime;
-#endif    
+    s << tx.nVersion; 
     unsigned char flags = 0;
     // Consistency check
     if (fAllowWitness) {

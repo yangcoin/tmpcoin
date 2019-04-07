@@ -9,7 +9,7 @@
  * network protocol versioning
  */
 //for pos time stamp tx
-#define TX_TIMESTAMP 1
+
 
 static const int PROTOCOL_VERSION = 70015;
 
