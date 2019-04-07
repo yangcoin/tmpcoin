@@ -58,6 +58,7 @@ struct Params {
     uint256 powLimit;
  //   bool fPowAllowMinDifficultyBlocks;
     bool fPowNoRetargeting;
+    bool fPowAllowMinDifficultyBlocks;
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }

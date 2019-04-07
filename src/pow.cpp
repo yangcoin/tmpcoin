@@ -17,72 +17,49 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     unsigned int nProofOfWorkLimit = UintToArith256(params.powLimit).GetCompact();
 
     // Genesis block
-    if (pindexLast == NULL||pindexLast->nHeight < ( BLOCK_HEIGHT_INIT +1 )) { 
-        LogPrint("mine", "init Limit %d ,%d\n" ,pindexLast->nHeight ,BLOCK_HEIGHT_INIT);
+    if (pindexLast == NULL||pindexLast->nHeight <= 500) { 
         return nProofOfWorkLimit;
     }
-    
-    // Only change once per difficulty adjustment interval
-    // DifficultyAdjustmentInterval = nPowTargetTimespan (1day, 86400) / nPowTargetSpacing (1min, 60 )  = 1440
-    // 하루의 시간 만큼 예상해서 구동된다.
-    // 난이도 조절이 되지 않는다.
-    // if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)//특정주기에 도달하지 않으면... 매번 동작한다.
-    // {
-    //     if (params.fPowAllowMinDifficultyBlocks) //mainnet false, only test,regnet
-    //     {
-    //         // Special difficulty rule for testnet:
-    //         // we use MinDiffculty for mainnet
-    //         // If the new block's timestamp is more than 2* 10 minutes
-    //         // then allow mining of a min-difficulty block.
-    //         if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*4)//4분... 아차피 동작하지 않지만...
-    //             return nProofOfWorkLimit;
-    //         else
-    //         {
-    //             // Return the last non-special-min-difficulty-rules-block
-    //             const CBlockIndex* pindex = pindexLast;
-    //             while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
-    //                 pindex = pindex->pprev;
-    //             return pindex->nBits;
-    //         }
-    //     }
-        
-    //     return pindexLast->nBits;
-    // }
-
+     
     //every time set retarget...
     //
     if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*5){//1min *5 no block, will reset difficulty
-        if(fDebug){ 
-            LogPrint("mine", "%d too old net... gap:%s sec, new:%08x , prev:%08x \n" ,pindexLast->nHeight,
-                pblock->GetBlockTime() - pindexLast->GetBlockTime() , nProofOfWorkLimit,pindexLast->nBits );
-        }
+        
         return nProofOfWorkLimit;
     }
-    //too fast
-    if (pblock->GetBlockTime() <  ( pindexLast->GetBlockTime() +  params.nPowTargetSpacing/3)){
-        unsigned int ret =pindexLast->nBits / 2;
-        if(fDebug)
-            LogPrint("mine", "prevhieght:%d too fast block %08x\n ",pindexLast->nHeight, ret);
-        return ret;
+    // Only change once per difficulty adjustment interval
+    if ((pindexLast->nHeight+1) % params.DifficultyAdjustmentInterval() != 0)
+    {
+        if (params.fPowAllowMinDifficultyBlocks)
+        {
+            // Special difficulty rule for testnet:
+            // If the new block's timestamp is more than 2* 10 minutes
+            // then allow mining of a min-difficulty block.
+            if (pblock->GetBlockTime() > pindexLast->GetBlockTime() + params.nPowTargetSpacing*2)
+                return nProofOfWorkLimit;
+            else
+            {
+                // Return the last non-special-min-difficulty-rules-block
+                const CBlockIndex* pindex = pindexLast;
+                while (pindex->pprev && pindex->nHeight % params.DifficultyAdjustmentInterval() != 0 && pindex->nBits == nProofOfWorkLimit)
+                    pindex = pindex->pprev;
+                return pindex->nBits;
+            }
+        }
+        return pindexLast->nBits;
     }
-    
 
     // Go back by what we want to be 14 days worth of blocks
     // Bithao: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
-    //
     int blockstogoback = params.DifficultyAdjustmentInterval()-1;
-    if ((pindexLast->nHeight+1) != params.DifficultyAdjustmentInterval()) // nPowTargetTimespan / nPowTargetSpacing;
-        blockstogoback = params.DifficultyAdjustmentInterval(); 
+    if ((pindexLast->nHeight+1) != params.DifficultyAdjustmentInterval())
+        blockstogoback = params.DifficultyAdjustmentInterval();
 
-    // Go back by what we want to be 1 days worth of blocks
+    // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
-    
-    for (int i = 0; pindexFirst && i < blockstogoback; i++){
-        if(pindexFirst->nHeight<=1)//root
-            break;
+    for (int i = 0; pindexFirst && i < blockstogoback; i++)
         pindexFirst = pindexFirst->pprev;
-    }
 
     assert(pindexFirst);
 
@@ -116,7 +93,7 @@ unsigned int CalculateNextWorkRequired(const CBlockIndex* pindexLast, int64_t nF
     
     bnOld = bnNew;
 
-    // Bithao: intermediate uint256 can overflow by 1 bit
+    // Quasar: intermediate uint256 can overflow by 1 bit
     const arith_uint256 bnPowLimit = UintToArith256(params.powLimit);
     bool fShift = bnNew.bits() > bnPowLimit.bits() - 1;
     if (fShift){
